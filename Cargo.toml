@@ -34,5 +34,5 @@ vetis = { version = "0.1.7-beta.5" }
 vetis-tokio = { version = "0.1.2-beta.6" }
 
 [dev-dependencies]
-caramelo = "0.1.4"
+caramelo = "0.1.5"
 tokio = { version = "1.53.1", default-features = false, features = ["macros"] }
