@@ -1,6 +1,8 @@
 # vetis-proxy
 
-Reverse proxy support for the vetis HTTP server framework. This module provides HTTP reverse proxy functionality to forward requests to backend servers.
+[![Crates.io downloads](https://img.shields.io/crates/d/vetis-proxy)](https://crates.io/crates/vetis-proxy) [![crates.io](https://img.shields.io/crates/v/vetis-proxy?style=flat-square)](https://crates.io/crates/vetis-proxy) [![Build Status](https://github.com/vetis-server/vetis-proxy/actions/workflows/rust.yml/badge.svg?event=push)](https://github.com/vetis-server/vetis-proxy/actions/workflows/rust.yml) ![Crates.io MSRV](https://img.shields.io/crates/msrv/vetis-proxy) [![Documentation](https://docs.rs/vetis-proxy/badge.svg)](https://docs.rs/vetis-proxy/latest/vetis-proxy) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/vetis-server/vetis-proxy/blob/main/LICENSE.md)  [![codecov](https://codecov.io/gh/vetis-server/vetis-proxy/graph/badge.svg?token=T0HSBAPVSI)](https://codecov.io/gh/vetis-server/vetis-proxy)
+
+Proxy support for the vetis HTTP server framework. This module provides HTTP proxy functionality to forward requests to backend servers.
 
 ## Features
 
