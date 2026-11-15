@@ -1,13 +1,15 @@
 #![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
+#[cfg(feature = "runtime-tokio")]
+use crate::tokio::ProxyHook;
+use compact_str::ToCompactString;
 use serde::{Deserialize, Serialize};
 use vetis::{
-    VetisResult,
+    VetisHook, VetisResult,
     errors::{ConfigError, VetisError},
-    host::path::{Path, PathConfig},
+    hook::HookConfig,
+    matcher::MatcherConfig,
 };
-
-use crate::tokio::ProxyPath;
 
 #[cfg(feature = "runtime-tokio")]
 /// Tokio runtime support module
@@ -16,21 +18,24 @@ pub mod tokio;
 #[cfg(test)]
 mod tests;
 
-/// Builder for creating `ProxyPathConfig` instances.
+/// Builder for creating `ProxyHookConfig` instances.
 #[derive(Deserialize)]
-pub struct ProxyPathConfigBuilder {
-    uri: String,
+pub struct ProxyHookConfigBuilder {
+    matcher: Option<Box<dyn MatcherConfig>>,
     target: String,
 }
 
-impl ProxyPathConfigBuilder {
-    /// Allow set the URI of the proxy path.
+impl ProxyHookConfigBuilder {
+    /// Allow set a matcher
     ///
     /// # Returns
     ///
     /// * `Self` - The builder.
-    pub fn uri(mut self, uri: &str) -> Self {
-        self.uri = uri.to_string();
+    pub fn add_matcher<M>(mut self, matcher: M) -> Self
+    where
+        M: MatcherConfig + Send + Sync + 'static,
+    {
+        self.matcher = Some(Box::new(matcher));
         self
     }
 
@@ -44,68 +49,63 @@ impl ProxyPathConfigBuilder {
         self
     }
 
-    /// Build the `ProxyPathConfig` with the configured settings.
+    /// Build the `ProxyHookConfig` with the configured settings.
     ///
     /// # Returns
     ///
-    /// * `VetisResult<ProxyPathConfig>` - The `ProxyPathConfig` with the configured settings.
-    pub fn build(self) -> VetisResult<ProxyPathConfig> {
-        if self.uri.is_empty() {
-            return Err(VetisError::Config(ConfigError::Path("URI cannot be empty".to_string())));
-        }
+    /// * `VetisResult<ProxyHookConfig>` - The `ProxyHookConfig` with the configured settings.
+    pub fn build(self) -> VetisResult<ProxyHookConfig> {
         if self
             .target
             .is_empty()
         {
-            return Err(VetisError::Config(ConfigError::Path(
-                "Target cannot be empty".to_string(),
+            return Err(VetisError::Config(ConfigError::Hook(
+                "Target cannot be empty".to_compact_string(),
             )));
         }
 
-        Ok(ProxyPathConfig { uri: self.uri, target: self.target })
+        Ok(ProxyHookConfig {
+            matcher: self
+                .matcher
+                .map_or(None, |val| Some(val)),
+            target: self.target,
+        })
     }
 }
 
 /// Configuration for a proxy path.
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ProxyPathConfig {
-    uri: String,
+pub struct ProxyHookConfig {
+    matcher: Option<Box<dyn MatcherConfig>>,
     target: String,
     // TODO: Add custom proxy rules
-
     // TODO: Add support for custom headers
 }
 
 #[typetag::serde(name = "rev-proxy")]
-impl PathConfig for ProxyPathConfig {
-    fn uri(&mut self, uri: &str) {
-        self.uri = uri.to_string();
+impl HookConfig for ProxyHookConfig {
+    fn matcher(&self) -> Option<&Box<dyn MatcherConfig>> {
+        self.matcher
+            .as_ref()
     }
 
-    fn boxed_clone(&self) -> Box<dyn PathConfig> {
+    fn boxed_clone(&self) -> Box<dyn HookConfig> {
         Box::new(self.clone())
     }
 
-    fn boxed_path(&self) -> Box<dyn Path> {
-        Box::new(ProxyPath::new(self.clone()))
-    }
-
-    fn boxed_sync(&self) -> Box<dyn Path + Send + Sync> {
-        Box::new(ProxyPath::new(self.clone()))
+    fn boxed_hook(&self) -> Box<dyn VetisHook> {
+        Box::new(ProxyHook::new(self.clone()))
     }
 }
 
-impl ProxyPathConfig {
-    /// Creates a new `ProxyPathConfigBuilder` with default settings.
+impl ProxyHookConfig {
+    /// Creates a new `ProxyHookConfigBuilder` with default settings.
     ///
     /// # Returns
     ///
-    /// * `ProxyPathConfigBuilder` - The builder.
-    pub fn builder() -> ProxyPathConfigBuilder {
-        ProxyPathConfigBuilder {
-            uri: "/test".to_string(),
-            target: "http://localhost:8080".to_string(),
-        }
+    /// * `ProxyHookConfigBuilder` - The builder.
+    pub fn builder() -> ProxyHookConfigBuilder {
+        ProxyHookConfigBuilder { matcher: None, target: "http://localhost:8080".to_string() }
     }
 
     /// Returns the target of the proxy path.

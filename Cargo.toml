@@ -10,25 +10,26 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 keywords = ["http", "modules", "server", "rest-server"]
 publish = true
-rust-version = "1.85.0"
+rust-version = "1.86.0"
 
 [features]
 default = ["runtime-tokio"]
-runtime-tokio = [
-  "deboa-tokio/rust-tls",
-  "deboa-tokio/default-rustls-provider",
-  "deboa-tokio/default-rustls-verifier",
-  "vetis-tokio/rust-tls",
-]
+runtime-tokio = []
 
 [dependencies]
-deboa = { version = "0.1.5-beta.7" }
-deboa-tokio = { version = "0.1.4-beta.8", optional = true }
-serde = { version = "1.0.228", features = ["derive"] }
+cel = "0.16.0"
+compact_str = "0.10.0"
+# deboa = { version = "0.1.5" }
+# deboa-tokio = { version = "0.1.4", optional = true }
+serde = { version = "1.0.228", features = ["derive", "rc"] }
 typetag = "0.2.21"
-vetis = { version = "0.1.7-beta.6" }
-vetis-tokio = { version = "0.1.2-beta.8" }
+vetis = { path = "../vetis/vetis" }
+# vetis-tokio = { path = "../vetis-tokio" }
 
 [dev-dependencies]
 caramelo = "0.1.5"
-tokio = { version = "1.53.1", default-features = false, features = ["macros"] }
+tokio = { version = "1.54.1", default-features = false, features = ["macros"] }
+
+# [patch.crates-io]
+# vetis = { path = "../vetis/vetis" }
+# vetis-tokio = { path = "../vetis-tokio" }

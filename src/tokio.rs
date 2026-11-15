@@ -1,16 +1,21 @@
-use crate::ProxyPathConfig;
+use crate::ProxyHookConfig;
+use cel::Context;
 use vetis::{
     Request, Response, VetisFutureResult,
-    errors::VetisError,
-    host::{HostContext, path::Path},
+    hook::{Hook, HookConfig as _, HookPhase},
+    matcher::Matcher,
 };
 
 /// Proxy path
-pub struct ProxyPath {
-    config: ProxyPathConfig,
+pub struct ProxyHook {
+    _config: ProxyHookConfig,
+    matcher: Option<Box<dyn Matcher>>,
 }
 
-impl ProxyPath {
+unsafe impl Send for ProxyHook {}
+unsafe impl Sync for ProxyHook {}
+
+impl ProxyHook {
     /// Create a new proxy path with provided configuration
     ///
     /// # Arguments
@@ -19,37 +24,38 @@ impl ProxyPath {
     ///
     /// # Returns
     ///
-    /// * `ProxyPath` - The proxy path
-    pub fn new(config: ProxyPathConfig) -> ProxyPath {
-        ProxyPath { config }
+    /// * `ProxyHook` - The proxy path
+    pub fn new(config: ProxyHookConfig) -> ProxyHook {
+        let matcher = if let Some(matcher_config) = config.matcher() {
+            Some(matcher_config.boxed_matcher())
+        } else {
+            None
+        };
+
+        ProxyHook { matcher, _config: config }
     }
 }
 
-impl Path for ProxyPath {
-    /// Get the URI of the proxy path
-    ///
-    /// # Returns
-    ///
-    /// * `&str` - The URI of the proxy path
-    fn uri(&self) -> &str {
-        &self.config.uri
+impl Hook for ProxyHook {
+    fn has_matches(&self, context: &Context) -> bool {
+        if let Some(matcher) = &self.matcher { matcher.is_match(context) } else { true }
     }
 
-    /// Handle proxy request
-    ///
-    /// # Arguments
-    ///
-    /// * `request` - The request to handle
-    /// * `uri` - The URI of the request
-    ///
-    /// # Returns
-    ///
-    /// * `Pin<Box<dyn Future<Output = Result<Response, VetisError>> + Send + Sync + '_>>` - The future that will resolve to the response
+    fn phase(&self) -> &HookPhase {
+        &HookPhase::Rewrite
+    }
+
+    fn matcher_mut(&mut self) -> Option<&mut Box<dyn Matcher>> {
+        self.matcher
+            .as_mut()
+    }
+
     fn handle<'a>(
         &'a self,
         request: Request,
-        host_context: HostContext,
-    ) -> VetisFutureResult<'a, Response> {
-        Box::pin(async move { Ok::<Response, VetisError>(Response::builder().empty()) })
+        _response: Option<Response>,
+    ) -> VetisFutureResult<'a, (Request, Option<Response>)> {
+        let future = async move { Ok((request, Some(Response::builder().empty()))) };
+        Box::pin(future)
     }
 }
