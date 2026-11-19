@@ -1,9 +1,8 @@
 use crate::ProxyHookConfig;
 use cel::Context;
 use vetis::{
-    HookPhases, Request, Response, VetisFutureResult,
-    hook::{Hook, HookConfig as _, HookPhase},
-    make_bitflags,
+    Request, Response, VetisFutureResult,
+    hook::{Hook, HookConfig as _, HookPhase, HookPhases},
     matcher::Matcher,
 };
 
@@ -43,7 +42,7 @@ impl Hook for ProxyHook {
     }
 
     fn phases(&self) -> HookPhases {
-        make_bitflags!(HookPhase::Rewrite)
+        HookPhases::new(HookPhase::Rewrite)
     }
 
     fn matcher_mut(&mut self) -> Option<&mut Box<dyn Matcher>> {
