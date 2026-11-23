@@ -10,4 +10,4 @@ allow = [
 ]
 
 [advisories]
-ignore = ["RUSTSEC-2024-0449"]
+ignore = []
