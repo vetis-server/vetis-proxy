@@ -2,13 +2,13 @@ use crate::ProxyHookConfig;
 use cel::Context;
 use vetis::{
     Request, Response, VetisFutureResult,
-    hook::{Hook, HookConfig as _, HookPhase, HookPhases},
+    hook::{Hook, HookConfig as _, HookPhase},
     matcher::Matcher,
 };
 
 /// Proxy path
 pub struct ProxyHook {
-    _config: ProxyHookConfig,
+    config: ProxyHookConfig,
     matcher: Option<Box<dyn Matcher>>,
 }
 
@@ -26,23 +26,32 @@ impl ProxyHook {
     ///
     /// * `ProxyHook` - The proxy path
     pub fn new(config: ProxyHookConfig) -> ProxyHook {
-        let matcher = if let Some(matcher_config) = config.matcher() {
-            Some(matcher_config.boxed_matcher())
-        } else {
-            None
-        };
-
-        ProxyHook { matcher, _config: config }
+        ProxyHook { matcher: None, config: config }
     }
 }
 
 impl Hook for ProxyHook {
+    fn setup<'a>(&'a mut self) -> VetisFutureResult<'a, ()> {
+        Box::pin(async move {
+            let matcher = if let Some(matcher_config) = self
+                .config
+                .matcher()
+            {
+                Some(matcher_config.boxed_matcher())
+            } else {
+                None
+            };
+            self.matcher = matcher;
+            Ok(())
+        })
+    }
+
     fn has_matches(&self, context: &Context) -> bool {
         if let Some(matcher) = &self.matcher { matcher.is_match(context) } else { true }
     }
 
-    fn phases(&self) -> HookPhases {
-        HookPhases::new(HookPhase::Rewrite)
+    fn phase(&self) -> HookPhase {
+        HookPhase::Rewrite
     }
 
     fn matcher_mut(&mut self) -> Option<&mut Box<dyn Matcher>> {
